@@ -2,14 +2,22 @@
 
 #ifdef USE_DMA
 #include <string.h>
-uint16_t DMA_MIN_SIZE = 16;
-/* If you're using DMA, then u need a "framebuffer" to store datas to be displayed.
- * If your MCU don't have enough RAM, please avoid using DMA(or set 5 to 1).
- * And if your MCU have enough RAM(even larger than full-frame size),
- * Then you can specify the framebuffer size to the full resolution below.
+
+#ifndef ST7789_DMA_MIN_TX_BYTES
+#define ST7789_DMA_MIN_TX_BYTES 16U
+#endif
+
+#if ST7789_USE_FB_SLICER
+#define ST7789_FB_PIXELS ((uint32_t)ST7789_WIDTH * (uint32_t)ST7789_DMA_STRIP_LINES)
+#else
+#define ST7789_FB_PIXELS ((uint32_t)ST7789_WIDTH)
+#endif
+
+/*
+ * Strip buffer for DMA paths (solid fills, buffered glyphs). Not a full framebuffer.
+ * Size is ST7789_FB_PIXELS uint16_t (see st7789_config.h: ST7789_USE_FB_SLICER).
  */
-#define HOR_LEN     5   /* Mind the resolution of your screen! */
-uint16_t disp_buf[ST7789_WIDTH * HOR_LEN];
+uint16_t disp_buf[ST7789_FB_PIXELS];
 #endif
 
 /**
@@ -41,7 +49,7 @@ static void ST7789_WriteData(uint8_t *buff, size_t buff_size)
     while (buff_size > 0) {
         uint16_t chunk_size = buff_size > 65535 ? 65535 : buff_size;
 #ifdef USE_DMA
-        if ((DMA_MIN_SIZE <= chunk_size) && (ST7789_SPI_PORT.hdmatx != NULL)) {
+        if ((ST7789_DMA_MIN_TX_BYTES <= chunk_size) && (ST7789_SPI_PORT.hdmatx != NULL)) {
             /* STM32H7: DMA completion != SPI shift register empty. HAL waits for EOT in
              * HAL_SPI_IRQHandler and only then sets HAL_SPI_STATE_READY. Waiting on
              * hdmatx->State alone can return early, cause HAL_BUSY on the next chunk,
@@ -211,11 +219,11 @@ void ST7789_Fill_Color(uint16_t color)
 
 #ifdef USE_DMA
     uint16_t swapped_color = (color << 8) | (color >> 8);
-    for (uint16_t k = 0; k < ST7789_WIDTH * HOR_LEN; k++) {
+    for (uint32_t k = 0; k < ST7789_FB_PIXELS; k++) {
         disp_buf[k] = swapped_color;
     }
     uint32_t total_pixels = ST7789_WIDTH * ST7789_HEIGHT;
-    uint32_t buf_size = ST7789_WIDTH * HOR_LEN;
+    uint32_t buf_size = ST7789_FB_PIXELS;
     while (total_pixels > 0) {
         uint32_t chunk = (total_pixels > buf_size) ? buf_size : total_pixels;
         ST7789_WriteData((uint8_t*)disp_buf, chunk * 2);
@@ -272,7 +280,7 @@ void ST7789_Fill(uint16_t xSta, uint16_t ySta, uint16_t xEnd, uint16_t yEnd, uin
     ST7789_SetAddressWindow(xSta, ySta, xEnd, yEnd);
 #ifdef USE_DMA
     uint32_t total_pixels = (xEnd - xSta + 1) * (yEnd - ySta + 1);
-    uint32_t buf_size = ST7789_WIDTH * HOR_LEN;
+    uint32_t buf_size = ST7789_FB_PIXELS;
     uint16_t swapped_color = (color << 8) | (color >> 8);
     if (total_pixels < buf_size) buf_size = total_pixels;
 
@@ -501,7 +509,7 @@ void ST7789_WriteChar(uint16_t x, uint16_t y, char ch, FontDef font, uint16_t co
             } else {
                 disp_buf[pixel_index++] = swapped_bgcolor;
             }
-            if (pixel_index >= (ST7789_WIDTH * HOR_LEN)) {
+            if (pixel_index >= ST7789_FB_PIXELS) {
                 ST7789_WriteData((uint8_t*)disp_buf, pixel_index * 2);
                 pixel_index = 0;
             }
