@@ -4,11 +4,11 @@ Using STM32's Hardware SPI(with simple DMA support) to drive a ST7789 based LCD 
 ## How to use ?
 
 1. Copy the "st7789" dir to your project src path, add it to include path   
-2. Include `"st7789.h"` in where you want to use this driver.   
-3. Configure parameters in `"st7789.h"` according to your own display panel  
+2. Include `"st7789.h"` in `main.c`.   
+3. Configure parameters in `"st7789_config.h"` according to your own display panel  
 4. In system startup, perform `ST7789_Init();`.  
 5. Run a `ST7789_Test()` to exam this driver.  
-6. Don't forget to turn the backlight on  
+6. Don't forget to turn the backlight on (HIGH level) 
 
 This code has been tested on 240x240 & 170x320 LCD screens.
 
@@ -22,7 +22,7 @@ For higher speed applications, it's recommended to **use PCB** rather than jumpe
 
 In STM32CubeMX/CubeIDE, config the SPI params as follow:
 
-![spi](fig/spi.jpg)
+![spi](fig/SPI.PNG)
 
 I've had a simple test, connect the screen and mcu via 20cm dupont line, and it works normally on **21.25MB/s**. And if I connect a logic analyzer to the clk and data lines(15cm probe), **21.25MB/s doesn't work anymore**, I have to lower its datarate to 10.625MB/s. Using PCB to connect the display, it works up to **40MB/s** and still looks nice.
 
@@ -41,6 +41,7 @@ For more details, please refer to ST7789's datasheet.
 ## HAL SPI Performance
 
 - DMA Enabled
+  ![DMAsetting](/fig/DMA_SPI.PNG)
 
 With DMA enabled, cpu won't participate in the data transfer process. So filling a large size of data block is much faster.e.g. fill, drawImage. (You can see no interval between each data write)
 
@@ -63,6 +64,8 @@ Especially in some functions where need a little math, the cpu needs to calculat
 #### Reference
 - [ananevilya's Arduino-ST7789-Lib](https://github.com/ananevilya/Arduino-ST7789-Library)  
 - [afiskon's stm32-st7735 lib](https://github.com/afiskon/stm32-st7735)
+- [lbthomsen lib](https://github.com/lbthomsen/stm32-st7789)
+- [Floyd-Fish lib](https://github.com/Floyd-Fish/ST7789-STM32)
 
 #### Contributor
 - [JasonLrh](https://github.com/JasonLrh)  
