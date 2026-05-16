@@ -70,7 +70,15 @@
 #define BLK_PORT TFT_BL_GPIO_Port
 #define BLK_PIN  TFT_BL_Pin
 
-#define USING_240X240
-#define ST7789_ROTATION 1
+/*
+ * Exactly one USING_* macro must match your panel pixel size:
+ * USING_135X240, USING_240X240, USING_240X320, USING_170X320
+ *
+ * ST7789_ROTATION for USING_240X320 / USING_240X240 :
+ *   0 = portrait (narrow side vertical), 1 = swapped (landscape) — see st7789.h
+ */
+//#define USING_240X240
+#define USING_240X320
+#define ST7789_ROTATION 2
 
 #endif /* INC_ST7789_CONFIG_H_ */
